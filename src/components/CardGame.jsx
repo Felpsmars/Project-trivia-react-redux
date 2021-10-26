@@ -85,6 +85,13 @@ class CardGame extends React.Component {
   // toogleNextButton() {
   //   this.setState(({ timer }) => ({ timer: !timer }));
   // }
+  // encode feito com base em código do Lucas Rodrigues da Turma 08
+  // código fornecido pelo aluno Michael Caxias, da turma 14-b
+
+  encodeUtf8(string) {
+    const stringUTF = unescape(encodeURIComponent(string));
+    return stringUTF.replace(/&quot;|&#039;/gi, '\'');
+  }
 
   saveLocalStorePlayerData() {
     const { game } = this.props;
@@ -129,7 +136,7 @@ class CardGame extends React.Component {
               } }
               disabled={ timer }
             >
-              { answerButton.answer }
+              { this.encodeUtf8(answerButton.answer) }
             </button>);
         }
         count += 1;
@@ -144,7 +151,7 @@ class CardGame extends React.Component {
               await this.saveLocalStorePlayerData();
             } }
           >
-            {answerButton.answer}
+            {this.encodeUtf8(answerButton.answer)}
           </button>
         );
       }));
@@ -166,7 +173,7 @@ class CardGame extends React.Component {
     return (
       <div>
         <h2 data-testid="question-category">{ category }</h2>
-        <h3 data-testid="question-text">{ question }</h3>
+        <h3 data-testid="question-text">{this.encodeUtf8(question) }</h3>
         {this.generateAnswersButtons()}
         <button
           style={ { display: showNextBtn ? 'inline-block' : 'none' } }
