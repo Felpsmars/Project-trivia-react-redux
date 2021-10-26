@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 import CardGame from '../components/CardGame';
 import Header from '../components/Header';
 // import getQuestions from '../services/fetchQuestionsAPI';
-import { addCount, fetchQuestions, refreshTimer as refreshTimerAction,
+import { addCount, answeredQuestion, fetchQuestions, refreshTimer as refreshTimerAction,
   resetTimer as resetTimerAction,
   showNext } from '../redux/actions';
 import Timer from '../components/Timer';
@@ -20,7 +20,9 @@ class Game extends React.Component {
   }
 
   componentDidMount() {
+    const { game } = this.props;
     this.retriveQuestions();
+    localStorage.setItem('state', JSON.stringify(game));
   }
 
   async retriveQuestions() {
@@ -30,26 +32,28 @@ class Game extends React.Component {
   }
 
   handleClick() {
-    const { history, count, increaseCount,
-      refreshTimer, resetTimer, toogleNextButton } = this.props;
+    const { history, count, increaseCount, toogleAnswered,
+      refreshTimer, resetTimer, toogleNextButton, game } = this.props;
     resetTimer(false);
     toogleNextButton(false);
+    toogleAnswered(false);
     const FOUR = 4;
     const buttons = document.querySelectorAll('button');
     refreshTimer(RESET_COUNTDOWN);
     buttons.forEach((button) => { button.className = ''; });
+    localStorage.setItem('state', JSON.stringify(game));
     if (count < FOUR) {
       increaseCount(count + 1);
     } else {
-      history.push('/result');
+      history.push('/feedbacks');
     }
   }
 
   render() {
-    const { count, questions, countdown, toogleNextButton, showNextBtn } = this.props;
+    const { count, questions, countdown, showNextBtn } = this.props;
     if (countdown === 0 || showNextBtn === true) {
       clearInterval(this.timer);
-      toogleNextButton(true);
+      // toogleNextButton(true);
     }
 
     return (
@@ -71,6 +75,8 @@ const mapStateToProps = ({ game }) => ({
   timer: game.timer,
   countdown: game.countdown,
   showNextBtn: game.next,
+  player: game.player,
+  game,
 });
 
 const mapDispatchToProps = (dispatch) => ({
@@ -79,6 +85,7 @@ const mapDispatchToProps = (dispatch) => ({
   refreshTimer: (time) => dispatch(refreshTimerAction(time)),
   resetTimer: (timer) => dispatch(resetTimerAction(timer)),
   toogleNextButton: (boolean) => dispatch(showNext(boolean)),
+  toogleAnswered: (boolean) => dispatch(answeredQuestion(boolean)),
 });
 
 Game.defaultProps = {
@@ -98,6 +105,8 @@ Game.propTypes = {
   resetTimer: PropTypes.func.isRequired,
   toogleNextButton: PropTypes.func.isRequired,
   showNextBtn: PropTypes.bool.isRequired,
+  game: PropTypes.objectOf(PropTypes.object).isRequired,
+  toogleAnswered: PropTypes.func.isRequired,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Game);

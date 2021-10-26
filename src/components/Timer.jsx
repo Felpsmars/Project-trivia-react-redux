@@ -40,10 +40,9 @@ class Timer extends React.Component {
 
   render() {
     /* Contador feito pelo Guilherme Gomes 14-b */
-    const { resetTimer, countdown, refreshCountdown, showNextBtn } = this.props;
+    const { resetTimer, countdown, showNextBtn } = this.props;
     if (countdown === 0) {
       clearInterval(this.timer);
-      refreshCountdown(0);
       showNextBtn(true);
       resetTimer(true);
     }
@@ -54,6 +53,7 @@ class Timer extends React.Component {
 const mapStateToProps = ({ game }) => ({
   timer: game.timer,
   countdown: game.countdown,
+  answered: game.answered,
 });
 
 const mapDispatchToProps = (dispatch) => ({

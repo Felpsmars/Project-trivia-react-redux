@@ -2,22 +2,29 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import { connect } from 'react-redux';
 import '../css/buttonCss.css';
-import { showNext } from '../redux/actions';
+import { answeredQuestion, increaseScore as increaseScoreAction,
+  resetTimer, showNext } from '../redux/actions';
 
+const THREE = 3;
+const QUESTION_WEIGHT = [1, 2, THREE];
+const QUESTION_BASE_POINT = 10;
 class CardGame extends React.Component {
   constructor(props) {
     super(props);
+
+    // this.state = {
+    //   timer: false,
+    // }
 
     this.handleAnswerClick = this.handleAnswerClick.bind(this);
     // this.shuffleArray = this.shuffleArray.bind(this);
     this.parseAnswerInObject = this.parseAnswerInObject.bind(this);
     this.generateAnswersButtons = this.generateAnswersButtons.bind(this);
+    this.defineQuestionDifficulty = this.defineQuestionDifficulty.bind(this);
+    this.handleRightClick = this.handleRightClick.bind(this);
+    this.handleWrongClick = this.handleWrongClick.bind(this);
+    this.saveLocalStorePlayerData = this.saveLocalStorePlayerData.bind(this);
   }
-
-  // shouldComponentUpdate(nextProps) {
-  //   const { question, timer } = this.props;
-  //   return question.question !== nextProps.question.question;
-  // }
 
   parseAnswerInObject() {
     const { question } = this.props;
@@ -49,9 +56,45 @@ class CardGame extends React.Component {
   //   return arr;
   // }
 
-  handleAnswerClick() {
-    const { toogleNextButton } = this.props;
+  handleRightClick() {
+    const { increaseScore, name, email,
+      countdown, playerScore, playerAssertions } = this.props;
+
+    const score = Number(playerScore
+        + (QUESTION_BASE_POINT
+          + (Number(countdown) * Number(this.defineQuestionDifficulty()))));
+    increaseScore({
+      score,
+      assertions: playerAssertions + 1,
+      name,
+      email,
+    });
+  }
+
+  handleWrongClick() {
+    const { increaseScore, name, email,
+      playerScore, playerAssertions } = this.props;
+    increaseScore({
+      score: playerScore,
+      assertions: playerAssertions,
+      name,
+      email,
+    });
+  }
+
+  // toogleNextButton() {
+  //   this.setState(({ timer }) => ({ timer: !timer }));
+  // }
+
+  saveLocalStorePlayerData() {
+    const { game } = this.props;
+    localStorage.setItem('state', JSON.stringify(game));
+  }
+
+  async handleAnswerClick() {
+    const { toogleNextButton, answered } = this.props;
     const brothers = document.querySelectorAll('button');
+
     // getAttribute feito com base no stackoverflow
     brothers.forEach((brother) => {
       if (brother === brothers[brothers.length - 1]) {
@@ -63,42 +106,63 @@ class CardGame extends React.Component {
       }
     });
     toogleNextButton(true);
+    await answered(true);
+    // await this.saveLocalStorePlayerData()
   }
 
   generateAnswersButtons() {
     const { timer } = this.props;
     const randomAnswers = this.parseAnswerInObject();
     let count = 0;
-    return (randomAnswers.map((answerButton, index) => {
-      if (answerButton.correct) {
+    return (randomAnswers.length === 0
+      ? <span>loading...</span>
+      : randomAnswers.map((answerButton, index) => {
+        if (answerButton.correct) {
+          return (
+            <button
+              type="button"
+              data-testid="correct-answer"
+              onClick={ async () => {
+                await this.handleAnswerClick();
+                await this.handleRightClick();
+                await this.saveLocalStorePlayerData();
+              } }
+              disabled={ timer }
+            >
+              { answerButton.answer }
+            </button>);
+        }
+        count += 1;
         return (
           <button
+            key={ index }
             type="button"
-            data-testid="correct-answer"
-            onClick={ this.handleAnswerClick }
-            disabled={ timer }
+            data-testid={ `wrong-answer-${count - 1}` }
+            onClick={ async () => {
+              await this.handleAnswerClick();
+              await this.handleWrongClick();
+              await this.saveLocalStorePlayerData();
+            } }
           >
-            { answerButton.answer }
-          </button>);
-      }
-      count += 1;
-      return (
-        <button
-          key={ index }
-          type="button"
-          data-testid={ `wrong-answer-${count - 1}` }
-          onClick={ this.handleAnswerClick }
-        >
-          {answerButton.answer}
-        </button>
-      );
-    }));
+            {answerButton.answer}
+          </button>
+        );
+      }));
+  }
+
+  defineQuestionDifficulty() {
+    const { question: { difficulty } } = this.props;
+    if (difficulty === 'easy') {
+      return QUESTION_WEIGHT[0];
+    } if (difficulty === 'medium') {
+      return QUESTION_WEIGHT[1];
+    } if (difficulty === 'hard') {
+      return QUESTION_WEIGHT[2];
+    }
   }
 
   render() {
     const { question: { category, question }, next, showNextBtn } = this.props;
-    // const randomAnswers = this.parseAnswerInObject();
-    // const timer = Number(document.querySelector('#timer'));
     return (
       <div>
         <h2 data-testid="question-category">{ category }</h2>
@@ -108,7 +172,6 @@ class CardGame extends React.Component {
           style={ { display: showNextBtn ? 'inline-block' : 'none' } }
           type="button"
           data-testid="btn-next"
-          // value="Proxima"
           onClick={ () => { next(); } }
         >
           Proxima
@@ -119,13 +182,23 @@ class CardGame extends React.Component {
   }
 }
 
-const mapStateToProps = ({ game }) => ({
+const mapStateToProps = ({ user, game, game: { player } }) => ({
+  name: user.name,
+  email: user.email,
   timer: game.timer,
   showNextBtn: game.next,
+  playerScore: player.score,
+  playerAssertions: player.assertions,
+  countdown: game.countdown,
+  player,
+  game,
 });
 
 const mapDispatchToProps = (dispatch) => ({
   toogleNextButton: (boolean) => dispatch(showNext(boolean)),
+  stopTimer: (boolean) => dispatch(resetTimer(boolean)),
+  increaseScore: (playerObj) => dispatch(increaseScoreAction(playerObj)),
+  answered: (boolean) => dispatch(answeredQuestion(boolean)),
 });
 
 CardGame.propTypes = {
@@ -134,11 +207,20 @@ CardGame.propTypes = {
     question: PropTypes.string,
     correct_answer: PropTypes.string,
     incorrect_answers: PropTypes.arrayOf(PropTypes.any),
+    difficulty: PropTypes.string,
   }).isRequired,
   next: PropTypes.func.isRequired,
   timer: PropTypes.bool.isRequired,
   toogleNextButton: PropTypes.func.isRequired,
   showNextBtn: PropTypes.bool.isRequired,
+  increaseScore: PropTypes.func.isRequired,
+  countdown: PropTypes.number.isRequired,
+  playerScore: PropTypes.number.isRequired,
+  playerAssertions: PropTypes.number.isRequired,
+  name: PropTypes.string.isRequired,
+  email: PropTypes.string.isRequired,
+  answered: PropTypes.bool.isRequired,
+  game: PropTypes.objectOf(PropTypes.object).isRequired,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(CardGame);

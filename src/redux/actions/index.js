@@ -6,6 +6,9 @@ export const GET_QUESTIONS = 'GET_QUESTIONS';
 export const STOP_TIMER = 'STOP_TIMER';
 export const REFRESH_TIMER = 'REFRESH_TIMER';
 export const SHOW_NEXT = 'SHOW_NEXT';
+export const SAVE_PLAYER_INFO = 'SAVE_PLAYER_INFO';
+export const INCREASE_SCORE = 'INCREASE_SCORE';
+export const ANSWERED = 'ANSWERED';
 
 export const loginInfo = (payload) => ({
   type: LOGIN_INFO,
@@ -39,5 +42,20 @@ export const refreshTimer = (payload) => ({
 
 export const showNext = (payload) => ({
   type: SHOW_NEXT,
+  payload,
+});
+
+export const savePlayerInfo = (payload) => ({
+  type: SAVE_PLAYER_INFO,
+  payload,
+});
+
+export const increaseScore = (payload) => ({
+  type: INCREASE_SCORE,
+  payload,
+});
+
+export const answeredQuestion = (payload) => ({
+  type: ANSWERED,
   payload,
 });
